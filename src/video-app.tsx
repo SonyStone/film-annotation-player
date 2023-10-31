@@ -343,7 +343,7 @@ export function VideoApp() {
       >
         <div id="chat-header" class="box-border box-border grid grid-cols-[0.6fr_0.4fr] gap-2 p-2">
           <div class="flex w-full gap-2">
-            <span class="border-coolgray flex-1 border border-solid p-2">ABR_Ep01_010</span>
+            <span class="border-coolgray flex-1 border border-solid p-2 text-center">ABR_Ep01_010</span>
             <span class="w-40px border-coolgray border border-solid p-2 text-center">v01</span>
           </div>
           <span class="border-coolgray border border-solid p-2 text-center">Comp</span>
@@ -369,7 +369,7 @@ export function VideoApp() {
       </div>
       <div class="bg-#eeeeee z-1 border-coolgray min-w-10 border-l-solid box-border flex w-10 flex-col border">
         <button
-          class="border-b-solid border-coolgray box-border h-10 border border-none bg-transparent text-black"
+          class="border-b-solid border-coolgray hover:bg-#00000010 box-border h-10 border border-none bg-transparent text-black"
           onClick={() => setIsOpen(!isOpen())}
         >
           T

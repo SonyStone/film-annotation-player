@@ -18,7 +18,7 @@ export default function App() {
       }}
     >
       <header class="box-border flex flex-col bg-black">
-        <nav class="text-#ada69b box-content  flex h-[22.6771px] p-[7px_20px_2px_25px] text-[12.6px] leading-[16.38px]">
+        <nav class="text-#9da2a6 box-content  flex h-[22.6771px] p-[7px_20px_2px_25px] text-[12.6px] leading-[16.38px]">
           <ul class="m-0 flex gap-4 p-0">
             <For
               each={[
@@ -30,7 +30,9 @@ export default function App() {
             >
               {(item) => (
                 <li class="float-left m-0 list-none whitespace-nowrap p-0">
-                  <a>{item.title}</a>
+                  <a class="hover:text-#fff decoration-none text-inherit" href={item.href}>
+                    {item.title}
+                  </a>
                 </li>
               )}
             </For>
@@ -40,7 +42,7 @@ export default function App() {
           <h1 class="ireptu-logo">IREPTU FILMS HQ</h1>
         </div>
       </header>
-      <main class="mx-auto box-border max-w-6xl px-2 py-10">
+      <main class="mx-auto box-border max-w-6xl px-2 pb-10 pt-8">
         <VideoApp />
       </main>
     </ErrorBoundary>
