@@ -38,7 +38,7 @@ export function createCanvasHandler(props: { size: Accessor<Dimensions> }) {
   const resizeTo = createMemo(() => {
     const { height, width } = props.size();
     const _canvas = canvas();
-    if (!_canvas) {
+    if (!_canvas || height === 0 || height === 0) {
       return 'matrix(1,0,0,1,0,0)';
     }
 
