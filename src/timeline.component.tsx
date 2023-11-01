@@ -1,5 +1,5 @@
 import { clamp } from '@utils/clamp';
-import { createMemo, createSignal, ErrorBoundary, For } from 'solid-js';
+import { ComponentProps, createMemo, createSignal, ErrorBoundary, For } from 'solid-js';
 
 import { Frame } from './interfaces/Frame';
 import { TimelinePosition } from './interfaces/TimelinePosition';
@@ -9,13 +9,17 @@ import { onResize } from './utils/onResize';
 
 const PADDING = 8 as TimelinePosition;
 
-export default function Timeline(props: {
-  totalFrames: Frame;
-  currentFrame: Frame;
-  progress: (readonly [number, number])[];
-  setCurrentFrame: (frame: Frame) => void;
-  pause: () => void;
-}) {
+type chi = Pick<ComponentProps<'div'>, 'children'>;
+
+export default function Timeline(
+  props: {
+    totalFrames: Frame;
+    currentFrame: Frame;
+    progress: (readonly [number, number])[];
+    setCurrentFrame: (frame: Frame) => void;
+    pause: () => void;
+  } & Pick<ComponentProps<'div'>, 'children'>
+) {
   const [size, setSize] = createSignal<{ width: number; height: number }>({
     width: 0,
     height: 0
@@ -37,9 +41,10 @@ export default function Timeline(props: {
   return (
     <ErrorBoundary fallback={<div>Error in Timeline</div>}>
       <div
-        class="border-coolgray relative flex flex-1 touch-none rounded-sm border border-solid p-2"
+        class="border-coolgray relative flex flex-1 touch-none rounded-sm border border-solid px-2 pb-3 pt-1"
         use:onResize={setSize}
       >
+        {props.children}
         <svg xmlns="http://www.w3.org/2000/svg" height="30" width="100%">
           <rect
             class="hover:fill-#d4d4d4 fill-#b6b6b680 cursor-e-resize transition"

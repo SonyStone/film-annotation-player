@@ -3,7 +3,7 @@ import './index.scss';
 import { render } from 'solid-js/web';
 import 'uno.css';
 
-import App from './app';
+import App from './app.component';
 
 if (import.meta.env.DEV && !(document.body instanceof HTMLElement)) {
   throw new Error(

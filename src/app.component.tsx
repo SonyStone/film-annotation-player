@@ -1,5 +1,5 @@
 import { ErrorBoundary, For } from 'solid-js';
-import { VideoApp } from './video-app';
+import { VideoApp } from './video-app.component';
 
 declare module 'solid-js' {
   namespace JSX {
@@ -17,8 +17,8 @@ export default function App() {
         return <div>Error in the Player</div>;
       }}
     >
-      <header class="box-border flex flex-col bg-black">
-        <nav class="text-#9da2a6 box-content  flex h-[22.6771px] p-[7px_20px_2px_25px] text-[12.6px] leading-[16.38px]">
+      <header class="box-border flex flex-col ">
+        <nav class="text-#9da2a6 box-content flex  h-[22.6771px] bg-black p-[7px_20px_2px_25px] text-[12.6px] leading-[16.38px]">
           <ul class="m-0 flex gap-4 p-0">
             <For
               each={[

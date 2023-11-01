@@ -1,8 +1,8 @@
 import { rgba } from 'polished';
 import type { Rect } from '../geometry';
+import type { StrokeDrawingContext, StrokeProtocol } from '../stroke-protocol';
 import type { StylusState } from '../stylus';
 import { cloneStylusState, copyStylusState } from '../stylus';
-import type { StrokeProtocol, StrokeDrawingContext } from '../stroke-protocol';
 
 const pi = Math.PI;
 const one = pi + pi;
@@ -57,7 +57,7 @@ export const defaultBrushConfig = Object.freeze<BrushConfig>({
   normalRandom: Math.random,
   normalSpread: 0,
   tangentRandom: Math.random,
-  tangentSpread: 0,
+  tangentSpread: 0
 });
 
 export function getHardRoundStampFn(ctx: CanvasRenderingContext2D, color: string) {
@@ -84,14 +84,7 @@ export function getDrawSoftRoundFn(color: string): DrawFn {
   return function drawSoftRound(ctx, width, height) {
     const halfWidth = width * 0.5;
     const halfHeight = height * 0.5;
-    const grd = ctx.createRadialGradient(
-      halfWidth,
-      halfHeight,
-      0,
-      halfWidth,
-      halfHeight,
-      halfWidth
-    );
+    const grd = ctx.createRadialGradient(halfWidth, halfHeight, 0, halfWidth, halfHeight, halfWidth);
     grd.addColorStop(0, color);
     grd.addColorStop(1, rgba(color, 0));
     ctx.fillStyle = grd;
@@ -99,20 +92,11 @@ export function getDrawSoftRoundFn(color: string): DrawFn {
   };
 }
 
-export function getStarStampFn(
-  ctx: CanvasRenderingContext2D,
-  color: string,
-  numPoints?: number,
-  innerRatio?: number
-) {
+export function getStarStampFn(ctx: CanvasRenderingContext2D, color: string, numPoints?: number, innerRatio?: number) {
   return getStampFn(ctx, getDrawStarFn(color, numPoints, innerRatio));
 }
 
-export function getDrawStarFn(
-  color: string,
-  numPoints: number = 5,
-  innerRatio: number = 0.5
-): DrawFn {
+export function getDrawStarFn(color: string, numPoints: number = 5, innerRatio: number = 0.5): DrawFn {
   return function drawStar(ctx, width, height) {
     const halfWidth = width * 0.5;
     const halfHeight = height * 0.5;
@@ -165,25 +149,16 @@ export interface DrawFn {
   (ctx: CanvasRenderingContext2D, width: number, height: number): void;
 }
 
-export function getStampFn(
-  ctx: CanvasRenderingContext2D,
-  drawFn: DrawFn,
-  aspectRatio = 1
-): StampFn {
+export function getStampFn(ctx: CanvasRenderingContext2D, drawFn: DrawFn, aspectRatio = 1): StampFn {
   return function stamp(config: BrushConfig, state: BrushStrokeState, params: StampParams) {
     const size = config.applyPressureToSize ? config.size * params.pressure : config.size;
     if (size <= 0) return;
     const width = getBrushWidth(size, aspectRatio);
     const height = getBrushHeight(size);
     const angleSpread = config.angleSpread && config.angleSpread * (config.angleRandom() - 0.5);
-    const angle =
-      params.angle +
-      (config.rotateToTangent ? config.angle + state.tangent : config.angle) +
-      angleSpread;
-    const normalSpread =
-      config.normalSpread && config.normalSpread * size * (config.normalRandom() - 0.5);
-    const tangentSpread =
-      config.tangentSpread && config.tangentSpread * size * (config.tangentRandom() - 0.5);
+    const angle = params.angle + (config.rotateToTangent ? config.angle + state.tangent : config.angle) + angleSpread;
+    const normalSpread = config.normalSpread && config.normalSpread * size * (config.normalRandom() - 0.5);
+    const tangentSpread = config.tangentSpread && config.tangentSpread * size * (config.tangentRandom() - 0.5);
     const doSpread = normalSpread || tangentSpread;
     const normal = state.tangent + quarter;
     const spreadX = doSpread && cos(normal) * normalSpread + cos(state.tangent) * tangentSpread;
@@ -233,11 +208,11 @@ export const stroke: BrushStroke = {
         x: curr.x,
         y: curr.y,
         angle: curr.twist * toRad,
-        pressure: curr.pressure,
+        pressure: curr.pressure
       },
       reserved: false,
       boundingRect: { x: 0, y: 0, w: 0, h: 0 },
-      prev: cloneStylusState(curr),
+      prev: cloneStylusState(curr)
     };
     const drawingContext = getDrawingContext(stroke, config, state);
     if (config.rotateToTangent || config.normalSpread > 0 || config.tangentSpread > 0) {
@@ -246,7 +221,7 @@ export const stroke: BrushStroke = {
       config.stamp(config, state, state.lastStamp);
     }
     return drawingContext;
-  },
+  }
 };
 
 function getDrawingContext(
@@ -320,8 +295,8 @@ function getDrawingContext(
         state.reserved = false;
       }
       return {
-        boundingRect: state.boundingRect,
+        boundingRect: state.boundingRect
       };
-    },
+    }
   };
 }

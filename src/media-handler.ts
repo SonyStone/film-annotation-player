@@ -19,7 +19,7 @@ import { Accessor, createEffect, createMemo, createSignal, untrack } from 'solid
 import { EXAMPLE_VIDEOS } from './example-videos';
 import { Dimensions } from './interfaces/Dimensions.interface';
 import { Frame } from './interfaces/Frame';
-import { frameToVideoTime, getFrameSize, VIDEO_TIME_PRECISION, videoTimeToFrame } from './interfaces/VideoTime';
+import { frameToVideoTime, getFrameSize, videoTimeToFrame } from './interfaces/VideoTime';
 
 enum NetworkState {
   NETWORK_EMPTY = 0,
@@ -52,8 +52,6 @@ export function createVideoHandler() {
   const [src, setSrc] = createSignal(EXAMPLE_VIDEOS[4].value);
 
   const dimentions = createDimentions(media);
-
-  const currentTimecode = createMemo(() => framesToTimecode(currentFrame(), frameSize()));
 
   const progress = createBufferedProgress(media);
   const progressFramse = createMemo(() => {
@@ -122,11 +120,11 @@ export function createVideoHandler() {
       isPlaying,
 
       fps,
+      frameSize,
       duration,
       totalFrames,
       currentTime,
       currentFrame,
-      currentTimecode,
       dimentions,
       resize,
       progress,
@@ -164,25 +162,6 @@ export function createVideoHandler() {
       }
     }
   ] as const;
-}
-
-function framesToTimecode(frame: Frame, frameSize: number) {
-  const absFrame = Math.abs(frame);
-  const suffix = frame < 0 ? -1 : 1;
-  const time = (absFrame * frameSize) / VIDEO_TIME_PRECISION;
-
-  const hours = Math.floor(time / 3600) % 24;
-  const minutes = Math.floor(time / 60) % 60;
-  const seconds = Math.floor(time % 60);
-  const frames = Math.floor(absFrame % (VIDEO_TIME_PRECISION / frameSize));
-
-  return {
-    suffix,
-    hours,
-    minutes,
-    seconds,
-    frames
-  } as const;
 }
 
 /** Duration of Media Element in seconds? */

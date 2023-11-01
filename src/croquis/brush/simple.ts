@@ -1,8 +1,8 @@
 import type { Circle } from '../geometry';
+import { dummyCanvasContext } from '../misc';
+import type { StrokeDrawingContext, StrokeProtocol } from '../stroke-protocol';
 import type { StylusState } from '../stylus';
 import { cloneStylusState, copyStylusState } from '../stylus';
-import type { StrokeProtocol, StrokeDrawingContext } from '../stroke-protocol';
-import { dummyCanvasContext } from '../misc';
 
 export type BrushContext = CanvasRenderingContext2D;
 
@@ -17,7 +17,7 @@ export const defaultBrushConfig = Object.freeze<BrushConfig>({
   ctx: dummyCanvasContext,
   color: '#000',
   size: 10,
-  globalCompositeOperation: 'source-over',
+  globalCompositeOperation: 'source-over'
 });
 
 export interface BrushStrokeState {
@@ -37,7 +37,7 @@ export const stroke: BrushStroke = {
   },
   down(config, curr) {
     const state: BrushStrokeState = {
-      prev: cloneStylusState(curr),
+      prev: cloneStylusState(curr)
     };
     const drawingContext = getDrawingContext(stroke, config, state);
 
@@ -51,7 +51,7 @@ export const stroke: BrushStroke = {
     drawCircle(config.ctx, stylusStateToCircle(curr, config.size));
     config.ctx.restore();
     return drawingContext;
-  },
+  }
 };
 
 function getDrawingContext(
@@ -90,7 +90,7 @@ function getDrawingContext(
       return {
         // boundingRect: state.boundingRect,
       };
-    },
+    }
   };
 }
 
@@ -150,12 +150,9 @@ function drawCapsuleCase2(ctx: BrushContext, c1: Circle, c2: Circle) {
   const x2 = x * x;
   const x3 = x * x * x;
   const y2 = y * y;
-  const ax =
-    (x === 0 ? c1.r : (y * Math.sqrt(r2 * x2 * (-r2 + x2 + y2)) + r2 * x2) / (x3 + x * y2)) + c1.x;
+  const ax = (x === 0 ? c1.r : (y * Math.sqrt(r2 * x2 * (-r2 + x2 + y2)) + r2 * x2) / (x3 + x * y2)) + c1.x;
   const ay = (r2 * y - Math.sqrt(r2 * x2 * (-r2 + x2 + y2))) / (x2 + y2) + c1.y;
-  const bx =
-    (x === 0 ? -c1.r : (-(y * Math.sqrt(r2 * x2 * (-r2 + x2 + y2))) + r2 * x2) / (x3 + x * y2)) +
-    c1.x;
+  const bx = (x === 0 ? -c1.r : (-(y * Math.sqrt(r2 * x2 * (-r2 + x2 + y2))) + r2 * x2) / (x3 + x * y2)) + c1.x;
   const by = (r2 * y + Math.sqrt(r2 * x2 * (-r2 + x2 + y2))) / (x2 + y2) + c1.y;
   const i = Math.atan2(ay - c1.y, ax - c1.x);
   const j = Math.atan2(by - c1.y, bx - c1.x);

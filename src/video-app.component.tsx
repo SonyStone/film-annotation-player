@@ -7,6 +7,7 @@ import { onHold } from './utils/onHold';
 import { For } from 'solid-js';
 
 import { createShortcut } from '@solid-primitives/keyboard';
+import { cursorEllipse } from '@utils/cursor-ellipse';
 import { effect } from 'solid-js/web';
 import { createAnnotation } from './annotation';
 import { createCanvasHandler } from './canvas';
@@ -25,7 +26,9 @@ import UndoIcon from './icons/undo.svg';
 import { COMPOSITE_OPERATIONS } from './interfaces/CompositeOperations';
 import { FRAME_RATES } from './interfaces/FrameRate';
 import Rewind from './rewind';
-import Timeline from './timeline';
+import { Sidebar } from './sidebar.component';
+import { Timecode } from './timecode.component';
+import Timeline from './timeline.component';
 import { createFileDrop } from './utils/file-drop';
 
 declare module 'solid-js' {
@@ -41,13 +44,13 @@ export function VideoApp() {
     {
       currentFrame,
       totalFrames,
+      frameSize,
       progressFramse,
       src,
       dimentions,
       isPlaying,
       volume,
       playbackRate,
-      currentTimecode,
       fps,
       resize
     },
@@ -96,7 +99,7 @@ export function VideoApp() {
     return file ? URL.createObjectURL(file) : undefined;
   });
 
-  const [isOpen, setIsOpen] = createSignal(true);
+  let [isOpen, setIsOpen] = createSignal(false);
 
   createShortcut(['Control', 'Z'], () => {
     console.log(`undo!`);
@@ -110,6 +113,12 @@ export function VideoApp() {
   createShortcut(['ArrowLeft'], previousFrame);
 
   onHold;
+
+  const { cursor } = cursorEllipse({ brushSize });
+
+  effect(() => {
+    console.log(`cursor`, cursor());
+  });
 
   return (
     <div class="border-coolgray relative box-border flex overflow-hidden rounded-sm border border-solid">
@@ -126,10 +135,11 @@ export function VideoApp() {
         >
           <div class="relative max-h-full max-w-full transform-gpu place-self-center" ref={setElement}>
             <canvas
-              class="z-1 absolute inset-0 cursor-crosshair touch-none"
+              class="z-1 absolute inset-0 touch-none"
               ref={setCanvas}
               style={{
-                transform: resizeTo()
+                transform: resizeTo(),
+                cursor: cursor()
               }}
               width={dimentions().width}
               height={dimentions().height}
@@ -143,19 +153,21 @@ export function VideoApp() {
             />
           </div>
         </div>
-        <div class="flex flex-col gap-1 overflow-hidden p-2">
-          <div class="flex gap-1">
-            <div class="border-coolgray max-w-40px w-40px flex place-content-center place-items-center overflow-hidden border border-solid p-2">
-              <span class="font-mono">{currentFrame()}f</span>
-            </div>
-            <Timeline
-              currentFrame={currentFrame()}
-              totalFrames={totalFrames()}
-              setCurrentFrame={setCurrentFrame}
-              pause={pause}
-              progress={progressFramse()}
-            />
-          </div>
+        <div class="flex flex-col gap-1 overflow-hidden p-1">
+          <Timeline
+            currentFrame={currentFrame()}
+            totalFrames={totalFrames()}
+            setCurrentFrame={setCurrentFrame}
+            pause={pause}
+            progress={progressFramse()}
+          >
+            <span class="absolute -bottom-0.5 right-1 font-mono text-sm">
+              <Timecode currentFrame={currentFrame()} frameSize={frameSize()} />
+            </span>
+            <span class="absolute -bottom-0.5 left-1 font-mono text-sm">
+              {currentFrame()}f/{totalFrames()}f
+            </span>
+          </Timeline>
 
           <div class="flex flex-wrap justify-center gap-1">
             <button class="p-0.5" onClick={save}>
@@ -174,11 +186,7 @@ export function VideoApp() {
             <button class="p-0.5" onClick={() => setCurrentFrame(0 as Frame)}>
               <SkipPreviousIcon />
             </button>
-            <button
-              class="p-0.5"
-              use:onHold={() => setCurrentFrame((currentFrame() - 1) as Frame)}
-              onClick={() => setCurrentFrame((currentFrame() - 1) as Frame)}
-            >
+            <button class="p-0.5" use:onHold={previousFrame} onClick={previousFrame}>
               <FastRewindIcon />
             </button>
             <Show
@@ -194,11 +202,7 @@ export function VideoApp() {
               </button>
             </Show>
 
-            <button
-              class="p-0.5"
-              use:onHold={() => setCurrentFrame((currentFrame() + 1) as Frame)}
-              onClick={() => setCurrentFrame((currentFrame() + 1) as Frame)}
-            >
+            <button class="p-0.5" use:onHold={nextFrame} onClick={nextFrame}>
               <FastForwardIcon></FastForwardIcon>
             </button>
             <button class="p-0.5" onClick={() => setCurrentFrame(totalFrames() as Frame)}>
@@ -238,17 +242,6 @@ export function VideoApp() {
               onInput={(e) => setBrushSize(parseFloat((e.target as any).value))}
             />
           </div>
-
-          <span class="flex gap-4">
-            <span class="font-mono">
-              {currentTimecode().suffix < 0 ? '-' : ' '}
-              {formatTimeItem(currentTimecode().hours)}:{formatTimeItem(currentTimecode().minutes)}:
-              {formatTimeItem(currentTimecode().seconds)}:{formatTimeItem(currentTimecode().frames)}
-            </span>
-            <span class="font-mono">
-              {currentFrame()}/{totalFrames()}
-            </span>
-          </span>
 
           <div>
             <label for="volume">Volume:</label>
@@ -335,52 +328,9 @@ export function VideoApp() {
         </div>
       </div>
 
-      <div
-        class={[
-          'w-360px  bg-#eeeeee border-l-solid border-coolgray absolute inset-y-0 right-10 box-border box-border flex flex-col border transition-transform',
-          isOpen() ? 'translate-x-0%  ' : 'translate-x-100%'
-        ].join(' ')}
-      >
-        <div id="chat-header" class="box-border box-border grid grid-cols-[0.6fr_0.4fr] gap-2 p-2">
-          <div class="flex w-full gap-2">
-            <span class="border-coolgray flex-1 border border-solid p-2 text-center">ABR_Ep01_010</span>
-            <span class="w-40px border-coolgray border border-solid p-2 text-center">v01</span>
-          </div>
-          <span class="border-coolgray border border-solid p-2 text-center">Comp</span>
-          <span class="border-coolgray border border-solid p-2 text-center">Дмитрий Корников</span>
-          <span class="border-coolgray border border-solid p-2 text-center">В разработке</span>
-        </div>
-        <div id="chat" class="box-border flex flex-1 flex-col gap-2 overflow-y-scroll p-2">
-          <For each={[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]}>
-            {(item) => (
-              <div id="chat-comment" class="min-h-4 box-border flex w-full flex-[0_0_auto] gap-2 p-2">
-                <div class="w-40px h-40px box-border flex place-content-center place-items-center rounded-full bg-white">
-                  A
-                </div>
-                <div class="box-border flex-1 rounded bg-white p-2 text-black">Comment</div>
-              </div>
-            )}
-          </For>
-        </div>
-        <div id="input" class="box-border flex w-full p-2">
-          <input class="h-10 flex-1" />
-          <button>send</button>
-        </div>
-      </div>
-      <div class="bg-#eeeeee z-1 border-coolgray min-w-10 border-l-solid box-border flex w-10 flex-col border">
-        <button
-          class="border-b-solid border-coolgray hover:bg-#00000010 box-border h-10 border border-none bg-transparent text-black"
-          onClick={() => setIsOpen(!isOpen())}
-        >
-          T
-        </button>
-      </div>
+      <Sidebar isOpen={setIsOpen} />
     </div>
   );
-}
-
-function formatTimeItem(item: number): string {
-  return item < 10 ? `0${item}` : `${item}`;
 }
 
 function isVideoFile(file: File) {
@@ -389,4 +339,15 @@ function isVideoFile(file: File) {
 
 function isJsonFile(file: File) {
   return file.type === 'application/json';
+}
+function ellipse(
+  arg0: number,
+  arg1: number,
+  arg2: number,
+  radiusY: any,
+  rotation: any,
+  startAngle: any,
+  endAngle: any
+) {
+  throw new Error('Function not implemented.');
 }
