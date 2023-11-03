@@ -1,22 +1,63 @@
-import { createStoreHistory } from '@utils/store-history';
+import { trackStore } from '@solid-primitives/deep';
+import { createUndoHistory } from '@solid-primitives/history';
 import { Accessor, createMemo, onCleanup, untrack } from 'solid-js';
-import { createStore } from 'solid-js/store';
+import { createStore, produce, reconcile, unwrap } from 'solid-js/store';
 import { effect } from 'solid-js/web';
+import { Image } from './canvas-handler';
 import { createImageFileHandler } from './image-file-handler';
+import { Brand } from './interfaces/Brand.type';
 import { Dimensions } from './interfaces/Dimensions.interface';
 import { Frame } from './interfaces/Frame';
 
 export interface Annotation {
-  // frame: Frame;
-  image?: ImageData;
-  text?: string;
+  frame?: Frame;
+  image?: Image;
+  comments?: { text: string; author: string; date: Date }[];
+  id: AnnotationId;
 }
 
-export function createAnnotation(props: { currentFrame: Accessor<Frame>; dimentions: Accessor<Dimensions> }) {
-  const [annotations, setAnnotations] = createStore<{
-    annotations: Annotation[];
-  }>({ annotations: [] });
-  const { undo, redo } = createStoreHistory({ store: () => annotations, setStore: setAnnotations });
+interface AnnotationStore {
+  // currentFrame: Frame;
+  [key: Frame]: Annotation;
+}
+
+let id = 0;
+function getAnnotationId(): AnnotationId {
+  return id++;
+}
+
+/**
+ * Кадр ролика целое число `int`
+ */
+export type AnnotationId = Brand<number, 'Frame'> | number;
+
+export function createAnnotation(props: {
+  currentFrame: Accessor<Frame>;
+  dimentions: Accessor<Dimensions>;
+  setCurrentFrame: (frame: Frame) => void;
+}) {
+  const [annotations, setAnnotations] = createStore<AnnotationStore>({});
+
+  const history = createUndoHistory(() => {
+    // part that save in history
+    trackStore(annotations);
+    const copy = structuredClone(unwrap(annotations));
+    const currentFrame = untrack(props.currentFrame);
+
+    // the functions thats return state.
+    return () => {
+      setAnnotations(reconcile(copy));
+      props.setCurrentFrame(currentFrame);
+    };
+  });
+
+  const undo = () => {
+    history.undo();
+  };
+  const redo = () => {
+    history.redo();
+  };
+
   const { imageToImageData, imageDataToBlop } = offscreenCanvas({ dimentions: props.dimentions });
   const fileHandler = createImageFileHandler({ imageToImageData, imageDataToBlop });
   const fileDownload = createFileDownload();
@@ -25,33 +66,43 @@ export function createAnnotation(props: { currentFrame: Accessor<Frame>; dimenti
     const file = await fileHandler.save(annotations);
     fileDownload.save(file);
   }
+  const currentAnnotation = createMemo<Annotation | undefined>(
+    () => {
+      const annotation = annotations[props.currentFrame()];
 
-  effect(() => {
-    console.log(`annotations`, annotations.annotations);
-  });
-
-  const currentAnnotation = createMemo(
-    () => annotations.annotations[props.currentFrame()] as Annotation | undefined,
+      return annotation;
+    },
     undefined,
     {
       equals: () => false
     }
   );
 
-  function add(imageData: ImageData | undefined): void {
-    console.log(`add`, imageData, untrack(props.currentFrame));
-    setAnnotations('annotations', (state) => {
-      state[untrack(props.currentFrame)] = {
-        image: imageData,
-        text: ''
-      };
-      console.log(`add2`, state);
-      return [...state];
-    });
-    console.log(`add3`, annotations.annotations);
+  function add(image: Image | undefined): void {
+    if (!image || image.id === untrack(currentAnnotation)?.image?.id) {
+      return;
+    }
+
+    const currentFrame = untrack(props.currentFrame);
+    const annotationId = getAnnotationId();
+    const annotation: Annotation = {
+      frame: currentFrame,
+      image,
+      comments: [],
+      id: annotationId
+    };
+
+    setAnnotations(
+      produce((state) => {
+        state[currentFrame] = annotation;
+      })
+    );
   }
 
-  return [{ currentAnnotation }, { save, add }] as const;
+  return [
+    { currentAnnotation, history },
+    { save, add, undo, redo }
+  ] as const;
 }
 
 export function offscreenCanvas(props: { dimentions: Accessor<Dimensions> }) {

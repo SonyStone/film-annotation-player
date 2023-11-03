@@ -9,6 +9,10 @@ import { pointerdown, pointermove, pointerup } from './events/pointer';
 import { COMPOSITE_OPERATIONS } from './interfaces/CompositeOperations';
 import { Dimensions } from './interfaces/Dimensions.interface';
 
+let imageId = 0;
+
+export type Image = { imageData: ImageData; id: number };
+
 export function createCanvasHandler(props: { size: Accessor<Dimensions> }) {
   const [canvas, setCanvas] = createSignal<HTMLCanvasElement | undefined>(undefined);
   const ctx: Accessor<CanvasRenderingContext2D | undefined> = createMemo(
@@ -19,7 +23,9 @@ export function createCanvasHandler(props: { size: Accessor<Dimensions> }) {
   const [brushColor, setBrushColor] = createSignal('#ffffff');
   const [brushComposite, setBrushComposite] = createSignal(COMPOSITE_OPERATIONS[0]);
 
-  const [currentImage, setCurrentImage] = createSignal<ImageData | undefined>(undefined);
+  const [currentImage, setCurrentImage] = createSignal<Image | undefined>(undefined, {
+    equals: (prev, next) => prev?.id === next?.id
+  });
 
   effect(() => {
     const img = currentImage();
@@ -29,7 +35,7 @@ export function createCanvasHandler(props: { size: Accessor<Dimensions> }) {
     }
 
     if (img) {
-      _ctx.putImageData(img, 0, 0);
+      _ctx.putImageData(img.imageData, 0, 0);
     } else {
       _ctx.clearRect(0, 0, _ctx.canvas.width, _ctx.canvas.height);
     }
@@ -80,7 +86,10 @@ export function createCanvasHandler(props: { size: Accessor<Dimensions> }) {
                   last()
                 );
               }),
-              map(() => ctx.getImageData(0, 0, ctx.canvas.width, ctx.canvas.height))
+              map(() => ({
+                imageData: ctx.getImageData(0, 0, ctx.canvas.width, ctx.canvas.height),
+                id: imageId++
+              }))
             )
           : of(undefined)
       )
@@ -97,6 +106,7 @@ export function createCanvasHandler(props: { size: Accessor<Dimensions> }) {
       brushColor,
       brushComposite,
       resizeTo,
+      // currentImage: createMemo(on(inputTrigger, () => untrack(currentImage)))
       currentImage
     },
     {

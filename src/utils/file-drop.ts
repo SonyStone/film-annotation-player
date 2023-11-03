@@ -17,7 +17,7 @@ import {
 import { createSignal } from 'solid-js';
 
 export function createFileDrop() {
-  const [element, setElement] = createSignal<HTMLElement | undefined>(undefined);
+  const [element, setFileDropElement] = createSignal<HTMLElement | undefined>(undefined);
 
   const over = wrapSignal(
     element,
@@ -64,5 +64,5 @@ export function createFileDrop() {
     []
   );
 
-  return { setElement, over, files } as const;
+  return { setFileDropElement, over, files } as const;
 }

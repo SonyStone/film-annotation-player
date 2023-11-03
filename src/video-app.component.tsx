@@ -8,9 +8,10 @@ import { For } from 'solid-js';
 
 import { createShortcut } from '@solid-primitives/keyboard';
 import { cursorEllipse } from '@utils/cursor-ellipse';
+import { createStore } from 'solid-js/store';
 import { effect } from 'solid-js/web';
-import { createAnnotation } from './annotation';
-import { createCanvasHandler } from './canvas';
+import { Annotation, createAnnotation } from './annotation';
+import { createCanvasHandler } from './canvas-handler';
 import { EXAMPLE_VIDEOS } from './example-videos';
 import EraserIcon from './icons/eraser.svg';
 import FastForwardIcon from './icons/fast-forward.svg';
@@ -75,23 +76,38 @@ export function VideoApp() {
     size: resize
   });
 
+  const state = createStore<{
+    currentFrame: Frame;
+    currentImage: ImageData | undefined;
+    annotations: { [key: Frame]: Annotation };
+  }>({
+    currentFrame: 0,
+    currentImage: undefined,
+    annotations: {}
+  });
+
   const onWaiting = () => console.log(`Playback has stopped because of a temporary lack of data`);
 
   const [rewind, setRewind] = createSignal<number>(0);
 
-  const { over, files, setElement } = createFileDrop();
+  const { over, files, setFileDropElement } = createFileDrop();
 
   const videoFile = createMemo<File | undefined>((file) => files().find(isVideoFile) || file);
   const commentFile = createMemo<File | undefined>((file) => files().find(isJsonFile) || file);
 
-  const [{ currentAnnotation }, { save, add }] = createAnnotation({ currentFrame, dimentions });
+  const [{ currentAnnotation, history }, { save, add, undo, redo }] = createAnnotation({
+    currentFrame,
+    dimentions,
+    setCurrentFrame
+  });
 
   effect(() => {
+    const image = currentImage();
     add(currentImage());
   });
   effect(() => {
-    console.log(`currentAnnotation`, currentAnnotation());
-    setCurrentImage(currentAnnotation()?.image);
+    const image = currentAnnotation()?.image;
+    setCurrentImage(image);
   });
 
   const fileSrc = createMemo(() => {
@@ -101,12 +117,8 @@ export function VideoApp() {
 
   let [isOpen, setIsOpen] = createSignal(false);
 
-  createShortcut(['Control', 'Z'], () => {
-    console.log(`undo!`);
-  });
-  createShortcut(['Control', 'Y'], () => {
-    console.log(`redo!`);
-  });
+  createShortcut(['Control', 'Z'], history.undo);
+  createShortcut(['Control', 'Y'], history.redo);
   createShortcut(['P'], playPause);
   createShortcut([' '], playPause);
   createShortcut(['ArrowRight'], nextFrame);
@@ -116,16 +128,14 @@ export function VideoApp() {
 
   const { cursor } = cursorEllipse({ brushSize });
 
-  effect(() => {
-    console.log(`cursor`, cursor());
-  });
-
   return (
     <div class="border-coolgray relative box-border flex overflow-hidden rounded-sm border border-solid">
       <div class={['box-border flex w-full flex-col transition-all', isOpen() ? 'mr-360px' : 'mr-0'].join(' ')}>
         <div
-          class="box-border flex flex-col place-content-center overflow-hidden bg-black"
+          class="box-border flex max-h-screen flex-col place-content-center overflow-hidden bg-black"
+          ref={setFileDropElement}
           onWheel={(event) => {
+            event.preventDefault();
             if (event.deltaY > 0) {
               nextFrame();
             } else {
@@ -133,7 +143,7 @@ export function VideoApp() {
             }
           }}
         >
-          <div class="relative max-h-full max-w-full transform-gpu place-self-center" ref={setElement}>
+          <div class="relative flex max-h-full max-w-full transform-gpu place-self-center">
             <canvas
               class="z-1 absolute inset-0 touch-none"
               ref={setCanvas}
@@ -147,7 +157,7 @@ export function VideoApp() {
             <video
               ref={setMedia}
               src={fileSrc() ?? src()}
-              class="max-h-full max-w-full touch-none"
+              class="max-h-[calc(100vh-4rem)] max-w-full touch-none"
               controls={false}
               attr:type="video/mp4"
             />
@@ -174,10 +184,10 @@ export function VideoApp() {
               <SaveIcon />
             </button>
 
-            <button class="p-0.5">
+            <button class="p-0.5" disabled={!history.canUndo()} onClick={undo}>
               <UndoIcon />
             </button>
-            <button class="p-0.5">
+            <button class="p-0.5" disabled={!history.canRedo()} onClick={redo}>
               <RedoIcon />
             </button>
 

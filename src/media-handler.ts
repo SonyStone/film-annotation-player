@@ -312,7 +312,12 @@ function createCurrentFrame(props: {
   const subscription = createSubscription();
   subscription.add(localCurrentFrame$.subscribe(setCurrentFrame));
 
-  return [currentFrame, (frame: Frame) => setCurrentFrame(clamp(frame, 0, untrack(props.totalFrames)))] as const;
+  return [
+    currentFrame,
+    (frame: Frame) => {
+      setCurrentFrame(clamp(frame, 0, untrack(props.totalFrames)));
+    }
+  ] as const;
 }
 
 function createPlaybackRate(media: Accessor<HTMLVideoElement | HTMLMediaElement | undefined>) {

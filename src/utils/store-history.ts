@@ -1,5 +1,5 @@
 import { Accessor, createMemo } from 'solid-js';
-import { SetStoreFunction, createStore } from 'solid-js/store';
+import { createStore, produce } from 'solid-js/store';
 import { effect } from 'solid-js/web';
 
 export interface StateHistoryOptions<State> {
@@ -11,7 +11,7 @@ export interface StateHistoryOptions<State> {
 
 type History<State> = {
   past: State[];
-  present: State | null;
+  present: State;
   future: State[];
 };
 
@@ -23,20 +23,16 @@ export interface StateHistoryOptions<State> {
 }
 
 export function createStoreHistory<T>(props: {
-  store: Accessor<any>;
-  setStore: SetStoreFunction<T>;
+  store: Accessor<T>;
+  setStore: (value: T) => void;
   options?: Partial<StateHistoryOptions<T>>;
 }) {
   const mergedOptions = { maxAge: 10, comparatorFn: () => true, ...props.options };
 
-  const [history, setHistory] = createStore({
+  const [history, setHistory] = createStore<History<T>>({
     past: [],
-    present: null,
+    present: props.store(),
     future: []
-  });
-
-  effect(() => {
-    console.log(`history`, { ...history });
   });
 
   let paused = false;
@@ -44,6 +40,10 @@ export function createStoreHistory<T>(props: {
 
   const hasPast = createMemo(() => history.past.length > 0);
   const hasFuture = createMemo(() => history.future.length > 0);
+
+  effect(() => {
+    props.setStore(history.present);
+  });
 
   effect(() => {
     const present = props.store();
@@ -56,43 +56,49 @@ export function createStoreHistory<T>(props: {
     const shouldUpdate = !past || mergedOptions.comparatorFn!(past, present);
 
     if (shouldUpdate) {
-      setHistory((state) => {
-        if (state.past.length === mergedOptions.maxAge) {
-          state.past = state.past.slice(1);
-        }
-        if (past) {
-          state.past = [...state.past, past];
-        }
-        state.present = present;
-        return state;
-      });
+      setHistory(
+        produce((state) => {
+          if (state.past.length === mergedOptions.maxAge) {
+            state.past = state.past.slice(1);
+          }
+          if (past) {
+            state.past = [...state.past, past];
+          }
+          state.present = present;
+        })
+      );
     }
+
+    console.log(`add-1`, history.present);
   });
 
   function undo() {
+    console.log(`undo`, history.past.length);
     if (history.past.length) {
-      setHistory((state) => {
-        const { past, present, future } = state;
-        const previous = past[past.length - 1];
-        state.past = past.slice(0, past.length - 1);
-        state.present = previous;
-        state.future = [present!, ...future];
-        return state;
-      });
+      setHistory(
+        produce((state) => {
+          const { past, present, future } = state;
+          const previous = past[past.length - 1];
+          state.past = past.slice(0, past.length - 1);
+          state.present = previous;
+          state.future = [present!, ...future];
+        })
+      );
     }
   }
 
   function redo() {
     if (history.future.length) {
-      setHistory((state) => {
-        const { past, present, future } = state;
-        const next = future[0];
-        const newFuture = future.slice(1);
-        state.past = [...past, present!];
-        state.present = next;
-        state.future = newFuture;
-        return state;
-      });
+      setHistory(
+        produce((state) => {
+          const { past, present, future } = state;
+          const next = future[0];
+          const newFuture = future.slice(1);
+          state.past = [...past, present!];
+          state.present = next;
+          state.future = newFuture;
+        })
+      );
     }
   }
 

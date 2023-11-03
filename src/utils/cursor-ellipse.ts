@@ -10,17 +10,12 @@ export function cursorEllipse(props: { brushSize: Accessor<number> }) {
     canvas.height = size + 2;
     ctx.lineWidth = 1;
     ctx.strokeStyle = '#535353';
-
-    console.log(size);
-
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.beginPath();
     ctx.ellipse(size / 2 + 1, size / 2 + 1, size / 2, size / 2, 1, 0, Math.PI * 2);
     ctx.stroke();
 
     const dataURL = canvas.toDataURL();
-
-    console.log(`dataURL`, dataURL);
 
     return `url(${dataURL}) ${size / 2 + 1} ${size / 2 + 1}, crosshair`;
   });
