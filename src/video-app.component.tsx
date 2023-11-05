@@ -95,7 +95,7 @@ export function VideoApp() {
   const videoFile = createMemo<File | undefined>((file) => files().find(isVideoFile) || file);
   const commentFile = createMemo<File | undefined>((file) => files().find(isJsonFile) || file);
 
-  const [{ currentAnnotation, history }, { save, add, undo, redo }] = createAnnotation({
+  const [{ currentAnnotation, currentComments, history }, { save, addImage, addComment }] = createAnnotation({
     currentFrame,
     dimentions,
     setCurrentFrame
@@ -103,7 +103,7 @@ export function VideoApp() {
 
   effect(() => {
     const image = currentImage();
-    add(currentImage());
+    addImage(currentImage());
   });
   effect(() => {
     const image = currentAnnotation()?.image;
@@ -184,10 +184,10 @@ export function VideoApp() {
               <SaveIcon />
             </button>
 
-            <button class="p-0.5" disabled={!history.canUndo()} onClick={undo}>
+            <button class="p-0.5" disabled={!history.canUndo()} onClick={history.undo}>
               <UndoIcon />
             </button>
-            <button class="p-0.5" disabled={!history.canRedo()} onClick={redo}>
+            <button class="p-0.5" disabled={!history.canRedo()} onClick={history.redo}>
               <RedoIcon />
             </button>
 
@@ -338,7 +338,7 @@ export function VideoApp() {
         </div>
       </div>
 
-      <Sidebar isOpen={setIsOpen} />
+      <Sidebar isOpen={setIsOpen} commnets={currentComments()} addCommnet={addComment} />
     </div>
   );
 }

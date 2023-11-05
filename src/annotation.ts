@@ -1,8 +1,9 @@
 import { trackStore } from '@solid-primitives/deep';
 import { createUndoHistory } from '@solid-primitives/history';
-import { Accessor, createMemo, onCleanup, untrack } from 'solid-js';
+import { createFileDownload } from '@utils/file-download';
+import { offscreenCanvas } from '@utils/offscreen-canvas';
+import { Accessor, createMemo, untrack } from 'solid-js';
 import { createStore, produce, reconcile, unwrap } from 'solid-js/store';
-import { effect } from 'solid-js/web';
 import { Image } from './canvas-handler';
 import { createImageFileHandler } from './image-file-handler';
 import { Brand } from './interfaces/Brand.type';
@@ -49,14 +50,7 @@ export function createAnnotation(props: {
       setAnnotations(reconcile(copy));
       props.setCurrentFrame(currentFrame);
     };
-  });
-
-  const undo = () => {
-    history.undo();
-  };
-  const redo = () => {
-    history.redo();
-  };
+  }, {});
 
   const { imageToImageData, imageDataToBlop } = offscreenCanvas({ dimentions: props.dimentions });
   const fileHandler = createImageFileHandler({ imageToImageData, imageDataToBlop });
@@ -78,97 +72,60 @@ export function createAnnotation(props: {
     }
   );
 
-  function add(image: Image | undefined): void {
+  const currentComments = createMemo<Annotation['comments']>(() => currentAnnotation()?.comments ?? []);
+
+  function addImage(image: Image | undefined): void {
     if (!image || image.id === untrack(currentAnnotation)?.image?.id) {
       return;
     }
 
-    const currentFrame = untrack(props.currentFrame);
-    const annotationId = getAnnotationId();
-    const annotation: Annotation = {
-      frame: currentFrame,
-      image,
-      comments: [],
-      id: annotationId
-    };
+    function setImage(state: AnnotationStore) {
+      const currentFrame = untrack(props.currentFrame);
+      const annotationId = getAnnotationId();
 
-    setAnnotations(
-      produce((state) => {
-        state[currentFrame] = annotation;
-      })
-    );
+      if (state[currentFrame]) {
+        state[currentFrame].image = image;
+      } else {
+        state[currentFrame] = {
+          frame: currentFrame,
+          image,
+          comments: [],
+          id: annotationId
+        };
+      }
+    }
+
+    setAnnotations(produce(setImage));
+  }
+
+  function addComment(text: string): void {
+    if (!text) {
+      return;
+    }
+
+    function setComment(state: AnnotationStore) {
+      const currentFrame = untrack(props.currentFrame);
+      const annotationId = getAnnotationId();
+
+      const commnet = { text, date: new Date(), author: 'Any' };
+
+      if (state[currentFrame]) {
+        state[currentFrame].comments?.push(commnet);
+      } else {
+        state[currentFrame] = {
+          frame: currentFrame,
+          image: undefined,
+          comments: [commnet],
+          id: annotationId
+        };
+      }
+    }
+
+    setAnnotations(produce(setComment));
   }
 
   return [
-    { currentAnnotation, history },
-    { save, add, undo, redo }
+    { currentAnnotation, currentComments, history },
+    { save, addImage, addComment }
   ] as const;
-}
-
-export function offscreenCanvas(props: { dimentions: Accessor<Dimensions> }) {
-  const canvas = new OffscreenCanvas(256, 256);
-  const ctx = canvas.getContext('2d')! as any as CanvasRenderingContext2D;
-  const empty = ctx.createImageData(canvas.width, canvas.height);
-
-  effect(() => {
-    canvas.width = props.dimentions().width;
-    canvas.height = props.dimentions().height;
-  });
-
-  function imageToImageData(image: CanvasImageSource): ImageData {
-    clear();
-    drawImage(image);
-    const imageData = getImageData();
-    clear();
-
-    return imageData;
-  }
-
-  function getImageData(): ImageData {
-    return ctx.getImageData(0, 0, canvas.width, canvas.height);
-  }
-
-  function drawImage(image: CanvasImageSource): void {
-    ctx.drawImage(image, 0, 0);
-  }
-
-  function clear(): void {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-  }
-
-  function imageDataToBlop(imageData: ImageData): Promise<Blob> {
-    ctx.putImageData(imageData, 0, 0);
-
-    const blob = (canvas as any)[(canvas as any).convertToBlob ? 'convertToBlob' : 'toBlob']();
-
-    return blob;
-  }
-
-  return {
-    imageToImageData,
-    imageDataToBlop
-  };
-}
-
-function createFileDownload() {
-  const a = document.createElement('a');
-
-  function save(file: File | null | void) {
-    if (file) {
-      const downloadLink = URL.createObjectURL(file);
-
-      a.href = downloadLink;
-      a.download = 'test.json';
-
-      a.click();
-    }
-  }
-
-  onCleanup(() => {
-    a.remove();
-  });
-
-  return {
-    save
-  };
 }

@@ -2,10 +2,15 @@ import { createSignal } from 'solid-js';
 
 import { For } from 'solid-js';
 import { effect } from 'solid-js/web';
+import { Annotation } from './annotation';
 
 import AddIcon from './icons/add.svg';
 
-export function Sidebar(props: { isOpen?: (value: boolean) => void }) {
+export function Sidebar(props: {
+  isOpen?: (value: boolean) => void;
+  commnets: Annotation['comments'];
+  addCommnet?: (value: string) => void;
+}) {
   const [isOpen, setIsOpen] = createSignal(true);
 
   effect(() => {
@@ -31,24 +36,41 @@ export function Sidebar(props: { isOpen?: (value: boolean) => void }) {
         </div>
         <div id="chat" class="relative box-border flex flex-1 flex-col gap-2 overflow-y-scroll p-2">
           <div class="min-h-1 bg-#eeeeee pointer-events-none sticky -top-2 w-full shadow-[0_0_0.5rem_0.5rem_#eeeeee]"></div>
-          <For each={[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]}>
-            {(item) => (
+          <For each={props.commnets}>
+            {(commnet) => (
               <div id="chat-comment" class="min-h-4 box-border flex w-full flex-[0_0_auto] gap-2 p-2">
                 <div class="w-40px h-40px box-border flex place-content-center place-items-center rounded-full bg-white">
                   A
                 </div>
-                <div class="box-border flex-1 rounded bg-white p-2 text-black">Comment</div>
+                <div class="box-border flex-1 rounded bg-white p-2 text-black">{commnet.text}</div>
               </div>
             )}
           </For>
           <div class="min-h-1 bg-#eeeeee pointer-events-none sticky -bottom-2 w-full shadow-[0_0_0.5rem_0.5rem_#eeeeee]"></div>
         </div>
-        <div id="input" class="box-border flex w-full p-2">
-          <textarea class="h-10 flex-1" />
-          <button>
+        <form
+          id="input"
+          class="box-border flex w-full p-2"
+          onsubmit={(e) => {
+            e.preventDefault();
+            const comment = (e.target as any).elements.comment;
+            if (comment && props.addCommnet) {
+              props.addCommnet(comment.value ?? '');
+              comment.value = '';
+            }
+          }}
+        >
+          <textarea
+            name="comment"
+            class="h-10 flex-1"
+            onKeyDown={(e) => {
+              e.stopPropagation();
+            }}
+          />
+          <button type="submit">
             <AddIcon />
           </button>
-        </div>
+        </form>
       </div>
       <div class="bg-#eeeeee z-1 border-coolgray min-w-10 border-l-solid box-border flex w-10 flex-col border">
         <button
