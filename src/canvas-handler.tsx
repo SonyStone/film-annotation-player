@@ -33,7 +33,7 @@ export function createCanvasHandler(props: { size: Accessor<Dimensions> }) {
 
     const scale = width && _canvas?.width ? width / _canvas.width : 1;
 
-    return brushSize() * scale;
+    return brushSize() * scale * window.devicePixelRatio;
   });
 
   effect(() => {
