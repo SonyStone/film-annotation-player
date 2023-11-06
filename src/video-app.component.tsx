@@ -70,7 +70,7 @@ export function VideoApp() {
     }
   ] = createVideoHandler();
   const [
-    { resizeTo, brushSize, brushColor, brushComposite, currentImage },
+    { resizeTo, brushSize, brushScreenSize, brushColor, brushComposite, currentImage },
     { setCanvas, setBrushComposite, setBrushColor, setBrushSize, setCurrentImage }
   ] = createCanvasHandler({
     size: resize
@@ -126,7 +126,7 @@ export function VideoApp() {
 
   onHold;
 
-  const { cursor } = cursorEllipse({ brushSize });
+  const { cursor } = cursorEllipse({ brushSize: brushScreenSize });
 
   return (
     <div class="border-coolgray relative box-border flex overflow-hidden rounded-sm border border-solid">

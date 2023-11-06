@@ -27,6 +27,15 @@ export function createCanvasHandler(props: { size: Accessor<Dimensions> }) {
     equals: (prev, next) => prev?.id === next?.id
   });
 
+  const brushScreenSize = createMemo(() => {
+    const { width } = props.size();
+    const _canvas = canvas();
+
+    const scale = width && _canvas?.width ? width / _canvas.width : 1;
+
+    return brushSize() * scale;
+  });
+
   effect(() => {
     const img = currentImage();
     const _ctx = ctx();
@@ -104,6 +113,7 @@ export function createCanvasHandler(props: { size: Accessor<Dimensions> }) {
   return [
     {
       brushSize,
+      brushScreenSize,
       brushColor,
       brushComposite,
       resizeTo,
