@@ -1,19 +1,19 @@
 import { trackStore } from '@solid-primitives/deep';
 import { createUndoHistory } from '@solid-primitives/history';
-import { createEffect } from 'solid-js';
+import { For } from 'solid-js';
 import { createStore, produce, reconcile, unwrap } from 'solid-js/store';
-import { For } from 'solid-js/web';
 
 export const TestTodo = () => {
   let input!: HTMLInputElement;
   let todoId = 0;
-  const [todos, setTodos] = createStore<{ [key: number]: string }>({});
+  const [todos, setTodos] = createStore<{ [key: number]: { image: { id: number } | undefined; text: string } }>({});
 
   const history = createUndoHistory(() => {
     trackStore(todos);
     const copy = structuredClone(unwrap(todos));
+
     return () => {
-      setTodos(reconcile(copy));
+      setTodos(reconcile(structuredClone(copy)));
     };
   });
 
@@ -21,14 +21,14 @@ export const TestTodo = () => {
     setTodos(
       produce((todos) => {
         todoId++;
-        todos[todoId] = text;
+        if (todos[0]) {
+          todos[0].image = { id: todoId };
+        } else {
+          todos[0] = { image: { id: todoId }, text: 'new one' };
+        }
       })
     );
   };
-
-  createEffect(() => {
-    console.log(`todos`, trackStore(unwrap(todos)));
-  });
 
   return (
     <>
@@ -50,16 +50,15 @@ export const TestTodo = () => {
           Add Todo
         </button>
       </div>
-      <For each={Object.values(todos)}>
-        {(todo) => {
-          console.log(`Creating ${todo}`);
-          return (
-            <div>
-              <span>{todo}</span>
-            </div>
-          );
-        }}
-      </For>
+      <div>
+        <For each={Object.values(todos)}>
+          {(item) => (
+            <span>
+              {item.text} | {item.image?.id}
+            </span>
+          )}
+        </For>
+      </div>
     </>
   );
 };

@@ -44,10 +44,11 @@ export function createAnnotation(props: {
     trackStore(annotations);
     const copy = structuredClone(unwrap(annotations));
     const currentFrame = untrack(props.currentFrame);
+    const imageId = copy[currentFrame]?.image?.id;
 
     // the functions thats return state.
     return () => {
-      setAnnotations(reconcile(copy));
+      setAnnotations(reconcile(structuredClone(copy)));
       props.setCurrentFrame(currentFrame);
     };
   }, {});
@@ -81,16 +82,16 @@ export function createAnnotation(props: {
 
     function setImage(state: AnnotationStore) {
       const currentFrame = untrack(props.currentFrame);
-      const annotationId = getAnnotationId();
 
       if (state[currentFrame]) {
         state[currentFrame].image = image;
+        // state[currentFrame].id = getAnnotationId();
       } else {
         state[currentFrame] = {
           frame: currentFrame,
           image,
           comments: [],
-          id: annotationId
+          id: getAnnotationId()
         };
       }
     }
@@ -105,18 +106,18 @@ export function createAnnotation(props: {
 
     function setComment(state: AnnotationStore) {
       const currentFrame = untrack(props.currentFrame);
-      const annotationId = getAnnotationId();
 
       const commnet = { text, date: new Date(), author: 'Any' };
 
       if (state[currentFrame]) {
         state[currentFrame].comments?.push(commnet);
+        // state[currentFrame].id = getAnnotationId();
       } else {
         state[currentFrame] = {
           frame: currentFrame,
           image: undefined,
           comments: [commnet],
-          id: annotationId
+          id: getAnnotationId()
         };
       }
     }
